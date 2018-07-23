@@ -1,0 +1,747 @@
+ods pdf startpage = never file = 'e:\sss\s520\cancor.pdf';
+
+data Fit;
+      input Weight Waist Pulse Chins Situps Jumps;
+      datalines;
+   191  36  50   5  162   60
+   189  37  52   2  110   60
+   193  38  58  12  101  101
+   162  35  62  12  105   37
+   189  35  46  13  155   58
+   182  36  56   4  101   42
+   211  38  56   8  101   38
+   167  34  60   6  125   40
+   176  31  74  15  200   40
+   154  33  56  17  251  250
+   169  34  50  17  120   38
+   166  33  52  13  210  115
+   154  34  64  14  215  105
+   247  46  50   1   50   50
+   193  36  46   6   70   31
+   202  37  62  12  210  120
+   176  37  54   4   60   25
+   157  32  52  11  230   80
+   156  33  54  15  225   73
+   138  33  68   2  110   43
+   ;
+   proc cancorr data=Fit all
+        vprefix=Physiological vname='Physiological Measurements'
+        wprefix=Exercises wname='Exercises';
+      var Weight Waist Pulse;
+      with Chins Situps Jumps;
+      title 'Middle-Aged Men in a Health Fitness Club';
+      title2 'Data Courtesy of Dr. A. C. Linnerud, NC State Univ';
+   run;
+
+   ods pdf close;
+
+ods html close;
+ods preferences;
+ods html;
+ods listing;
+options ls=70 ps=70 nodate nonumber;
+data test ;
+infile 'c:\removable disk\sss\s520\cars.dat';
+input country $ make$ mpg wt drv_r horse displacement cylin;
+run;
+
+*ods pdf startpage = never file ='c:\removable disk\sss\s520\clu_cars.pdf'; 
+ods pdf file ='c:\removable disk\sss\s520\clu_cars.pdf'; 
+
+
+/*proc print data = test;
+run;
+*/
+**endsas;
+
+proc sort;
+by make;
+run;
+
+proc cluster data=test method=single outtree=tree;
+var mpg wt drv_r displacement ;*horse cylin;
+id make;
+run; 
+
+
+proc tree  data=tree  n=3 spaces=2 out=out;
+id make;
+run;
+
+
+
+proc cluster data=test method=complete outtree=tree;
+var mpg wt drv_r displacement ;*horse cylin;
+id make;
+run; 
+
+
+proc tree  data=tree  n=4 spaces=2 out=out;
+id make;
+run;
+
+proc sort data = out;
+by make;
+run;
+
+
+proc sort data = out;
+by make;
+run;
+proc print data = out;
+by cluster;
+run;
+
+
+proc sort data= test;
+by make;
+run;
+
+data clus;
+merge test out;
+by make;
+run;
+
+proc sort ;
+by cluster;
+run;
+
+proc print;
+id make;
+by cluster;
+run;
+
+proc means data = clus maxdec = 3;
+class cluster;
+var mpg wt drv_r displacement;
+run;
+
+
+proc cluster data=test method=complete outtree=tree;
+var mpg wt drv_r ;
+id make;
+run; 
+
+
+proc tree  data=tree  spaces=2 out=out;
+id make;
+run;
+
+
+
+
+proc cluster data=test method=average outtree=tree;
+var mpg wt drv_r displacement ;
+id make;
+run; 
+
+
+proc tree  data=tree n=4  spaces=2 out =out;
+id make;
+run;
+
+proc sort;
+by make;
+run;
+
+
+data clus;
+merge test out;
+by make;
+run;
+
+proc sort data = clus;
+by cluster;
+run;
+
+proc print data =clus;
+id make;
+by cluster;
+run;
+
+ods pdf close;
+
+option ls=100 ps=100 nodate nonumber;
+ods html close;
+ods preferences;
+ods html;* path='e:\sss\s520\';
+ods listing;
+*ods pdf startpage = never file = 'c:\removable disk\sss\s520\gpa.pdf';
+data gpa;
+*infile 'c:\removable disk\sss\s520\gpa.dat';
+infile 'E:\4th-semester\multivariate-regression\code-and-pdf\data\gpa(1).dat';
+input admit $ gpa gmat;
+run;
+
+proc print data = gpa;
+run;
+
+
+%include 'e:\sss\s520\multinorm_macro.sas';
+
+%multnorm(data = gpa, var = gpa gmat);
+
+proc standard data  = gpa mean = 0 std = 1 out = gpastd;
+var gpa gmat;
+run;
+
+proc means data = gpa;
+run;
+
+proc means data = gpa maxdec = 3;
+class admit;
+run;
+
+*proc print data = gpastd;
+run;
+proc means data  = gpastd;
+run;
+
+
+*proc print data = gpa;
+run;
+
+data admitst;
+*infile 'c:\removable disk\sss\s520\gpatst.dat';
+infile 'E:\4th-semester\multivariate-regression\code-and-pdf\data\gpatst.dat';
+input admit $ gpa gmat;
+run;
+
+proc print data = admitst;
+run;
+proc means data = gpa maxdec = 3;
+var gpa gmat;
+run;
+
+proc sort data = gpa;
+by admit;
+
+proc means data = gpa;
+class admit;
+var gpa gmat;
+run;
+
+*ods html path='e:\sss\s520\';
+proc sgscatter data = gpa;
+matrix gpa gmat/group = admit;
+run;
+*ods html close;
+
+ods html;
+proc sgscatter data = gpa;
+matrix gpa gmat/group = admit diagonal=
+(histogram kernel);
+run;
+ods html close;
+
+
+
+proc sgscatter data = gpa;
+matrix gpa gmat/group = admit diagonal=
+(histogram normal);
+run;
+*ods html path='e:\sss\s520\';
+proc sgscatter data = gpa;
+matrix gpa gmat/group = admit diagonal=
+(histogram normal);
+run;
+*ods html close;
+
+
+
+proc sort data = gpa;
+by admit ;
+run;
+
+proc discrim data=gpa outstat=gpastat 
+method=normal pool=yes  listerr manova ;
+priors 'a'=.3333 'b'=.3333 'c'=.3333; /* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+title 'Using Linear Discriminant Function';
+run;
+quit;
+
+
+/*pool=yes means linear(default), 'test' means do test first,'no' means quadratic */
+proc discrim data=gpa outstat=gpastat 
+method=normal pool=test slpool=0.05 listerr manova ;
+priors 'a'=.3333 'b'=.3333 'c'=.3334; /* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+title 'Using Linear Discriminant Function';
+run;
+quit;
+
+
+proc discrim data=gpa outstat=gpastat distance
+method=normal pool=test  listerr manova ;
+priors 'a'=.36 'b'=.33 'c'=.31; /* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+title 'Using Linear Discriminant Function';
+run;
+quit;
+
+proc discrim data=gpastat testdata=admitst testout=tout 
+testlist distance;
+class admit;
+var gpa gmat;
+run;
+
+proc print data=tout;
+title2 'Output Classification Results of Test Data';
+run;
+*ods pdf close;
+
+
+
+proc discrim data=gpa
+method=normal pool=test manova wcov pcov 
+listerr crosslisterr distance;
+priors 'a'=.3333 'b'=.3333 'c'=.3334; /* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+run;
+
+proc discrim data=gpa
+method=normal pool=test manova wcov pcov listerr crosslisterr distance;
+*priors 'a'=.3333 'b'=.3333 'c'=.3334; /* a: admin b:notadmit c:border */
+class admit;
+priors prop;
+var gpa gmat;
+run;
+
+proc discrim data=gpa
+method=npar k=5 listerr crosslisterr distance;
+*priors 'a'=.3333 'b'=.3333 'c'=.3334; /* a: admin b:notadmit c:border */
+class admit;
+priors prop;
+var gpa gmat;
+run;
+
+proc means data = gpa maxdec = 3 n mean std var;
+class admit;
+var gpa gmat;
+run;
+
+
+proc discrim data=gpa
+method=normal pool = test listerr crosslisterr distance;
+*priors 'a'=.3333 'b'=.3333 'c'=.3334; /* a: admin b:notadmit c:border */
+class admit;
+priors equal;
+var gpa gmat;
+run;
+
+option ls=70 ps=70 nodate nonumber;
+*ods html close;
+*ods preferences;
+*ods html;
+*ods pdf startpage= never file = 'e:\sss\s520\fac_decathlon.pdf';
+
+ods pdf startpage= never file = 'c:\removable disk\sss\s520\fac_decathlon.pdf';
+
+data a (type=corr);
+_type_='corr';
+input  _name_ $ m100 longjump shotput highjump m400 m110hudl discus polevalt javelin m1500;
+cards;
+m100 1.00  . . . . . .  . . . 
+longjump 0.59  1.00  . . . . . . . . 
+shotput 0.35  0.42  1.00  . . . . . . .
+highjump 0.34  0.51  0.38  1.00  . . . . . .
+m400 0.63  0.49  0.19  0.29  1.00  . . . . . 
+m110hudl 0.40  0.52  0.36  0.46  0.34  1.00  . . . .
+discus 0.28  0.31  0.73  0.27  0.17  0.32  1.00  . . .
+polevalt 0.20  0.36  0.24  0.39  0.23  0.33  0.24  1.00  . .
+javelin 0.11  0.21  0.44  0.17  0.13  0.18  0.34  0.24  1.00  .
+m1500 -0.07  0.09 -0.08  0.18  0.39  0.00 -0.02  0.17 -0.00  1.00
+;
+run;
+
+
+proc factor data=a method = prin  rotate = varimax ;
+run;
+
+proc factor data=a method = ml heywood  rotate = varimax ;
+run;
+
+title 'PCA method';
+proc factor data = a method = prin n=4 rotate = promax  ;* plot scree ; *preplot  rotate = promax;
+run;
+
+title 'MLE';
+proc factor data=a method = ml heywood  n=4 rotate = varimax ;
+run;
+
+proc factor data=a method = ml heywood  rotate = varimax ;
+run;
+
+proc factor data=a method = prin  rotate = varimax ;
+run;
+
+
+
+/* Only for real data. Not for correlation matrix */
+*proc factor data=a method = ml heywood n=4 outstat = fact;
+*title 'two factors';
+*proc score data = a score = fact out = scores;
+*run;
+*proc print data = scores;
+*run;
+
+ods pdf close;
+
+ods html close;
+ods preferences;
+ods html;
+options ls=76;
+ods pdf file = 'e:\sss\s520\Hotelling.pdf';
+data a;
+  infile "e:\sss\s520\t5-1.dat";   * Edit this line *;
+  input sweat sodium potasium;       
+swdiff = sweat-4;
+sodiff = sodium-50;
+podiff = potasium-10;
+con = 1;
+
+run;
+
+
+proc print data  = a;
+run;
+
+/* or */
+/*data a;
+  input sweat sodium potasium;       
+swdiff = sweat-4;
+sodiff = sodium-50;
+podiff = potasium-10;
+con = 1;
+cards;
+3.7  48.5   9.3
+  5.7  65.1   8.0
+  3.8  47.2  10.9
+  3.2  53.2  12.0
+  3.1  55.5   9.7
+  4.6  36.1   7.9
+  2.4  24.8  14.0
+  7.2  33.1   7.6
+  6.7  47.4   8.5
+  5.4  54.1  11.3
+  3.9  36.9  12.7
+  4.5  58.8  12.3
+  3.5  27.8   9.8
+  4.5  40.2   8.4
+  1.5  13.5  10.1
+  8.5  56.4   7.1
+  4.5  71.6   8.2
+  6.5  52.8  10.9
+  4.1  44.1  11.2
+  5.5  40.9   9.4
+;
+run;
+*/
+run;
+title 'By Proc Geg';
+ods select multstat;
+proc reg data = a;
+model swdiff sodiff podiff = con/noint;
+mtest con;
+quit;
+run;
+
+title 'By Proc GLM';
+ods select multstat;
+proc glm data = a;
+model swdiff sodiff podiff = con/noint;
+manova h=con;
+run;
+quit;
+
+title;
+  * Edit this line *;
+proc corr data = a cov outp=b(type=cov);
+    var sweat sodium potasium;                      * Edit this line *;
+	run;
+
+
+proc print data=b;
+run;
+
+title 'Using Proc IML';
+proc iml;
+use a;
+read all into x;
+print x;
+   use b;
+   read all into c;
+print c;
+   p = ncol(c);
+   S = c[1:p,];
+   xbar = c[p+1,]`;
+   n = c[p+3,1];
+mu0 = { 4, 50,10};         * Hypothesized mean vector - Edit this line *;
+diff = xbar-mu0;
+covxbar = S/n;                  * Est. Cov. matrix of the sample mean;
+tsq = diff`*inv(covxbar)*diff;  * Hotelling's T-square;
+f = (n-p)*tsq/((n-1)*p);        * F-conversion;
+pval = 1 - probf(f,p,n-p);      * P-value calculation;
+ddf = n-p;
+print "The number of variables is" p ", and the sample size is  " n ".";
+print "For testing MU=" mu0 ",";
+print "Hotelling's T-Square=" tsq ".";
+print "The F-Statistic is" f ", with numerator df"  p "and
+     denominator df" ddf ".";
+print "The P-value is" pval ".";
+
+quit;
+run;
+
+proc sgscatter data=a; 
+plot sweat*sodium sweat*potasium  sodium*potasium/  ellipse;
+run;
+quit;
+
+ods pdf close;
+
+
+options ls=80 ps=80 nodate ;
+data a;
+*infile 'e:\s520\jackson1.dat';
+infile 'c:\removable disk\sss\s520\jackson1.dat';
+input lab day1 day2 day3;
+run;
+
+ods pdf startpage = never file = 'c:\removable disk\sss\s520\manova.pdf';
+
+proc print data = a;
+run;
+
+proc glm data=a;
+class lab;
+model day1 day2 day3 = lab /nouni;
+contrast 'tst: lab effect' lab 1 -1 0, lab 1 0 -1;
+manova;
+
+run;
+
+
+proc glm data=a;
+class lab;
+model day1 day2 day3 = lab /nouni;
+contrast 'tst: lab effect' lab 0 1  -1;
+manova;
+
+run;
+quit;
+
+
+proc glm data=a;
+class lab;
+model day1 day2 day3 = lab /nouni;
+contrast 'tst: lab effect' lab 1 -1 0, lab 1 0 -1;
+manova;
+
+run;
+
+
+proc glm data=a;
+class lab;
+model day1 day2 day3 = lab /nouni;
+contrast 'tst: lab effect' lab 1  -1 0, lab 1 0 -1;
+manova h=lab m=day1-day2, day2-day3;
+
+run;
+quit;
+
+/* or  */
+
+proc glm data=a;
+title 'method 1';
+class lab;
+*model day1 day2 day3 = lab /nouni;
+model day1 day2 day3 = lab; 
+manova h=lab; 
+run;
+quit;
+
+
+
+proc glm data=a;
+title'method 2';
+class lab;
+model day1 day2 day3 = lab /nouni;
+manova h=lab m = day1- day2, day1-day3;
+run;
+
+proc glm data=a;
+class lab;
+model day1 day2 day3 = lab /nouni;
+manova h=intercept lab/printe printh;
+run;
+
+
+
+proc glm data=a;
+class lab;
+model day1 day2 day3 = lab /nouni;
+manova h=intercept m = day2-day1, day3-day2;
+*manova h=lab m = day2-day1, day3-day2;
+
+run;
+quit;
+ods pdf close;
+
+ods html close;
+ods preferences;
+ods html;
+ods listing;
+option ls = 80 ps = 70 nodate;
+ods pdf startpage = never file = 'c:\removable disk\sss\s520\mreg.pdf';
+
+
+data a;
+infile 'c:\removable disk\sss\s520\semi.dat';
+input x1 x2 y1 y2 y3;
+run;
+
+proc print;
+run;
+
+
+proc reg data = a;
+model y1 y2 y3 = x1 x2;
+mtest;
+quit;
+
+proc reg data = a;
+model y1 y2 y3 = x1 x2;
+model: mtest x1,x2/print;
+onlyx1: mtest x1;
+onlyx2: mtest x2;
+allcoef: mtest y1-y2, y2-y3, intercept, x1, x2;
+x1andx2: mtest y1-y2, y2-y3,x1,x2;
+title 'Spatial Univormity in Semiconductor Processes';
+run; 
+quit;
+ods pdf close;
+
+/* Principal Component Analysis Example
+By: Dr. Lin
+*/
+ods
+html close;
+ods preferences;
+ods htm;
+option ls=80 ps=70;
+
+ods rtf file = 'E:\4th-semeter\multivariate-regression\code-and-pdf\handout-and-pdf\mentrack\pc_track.rtf';
+
+
+data a;
+length country $20.;
+infile 'E:\4th-semester\multivariate-regression\code-and-pdf\handout-and-pdf\mentrack\mentrack.dat' firstobs = 2;    /* use negative sign to show that the smaller,the better */
+input country $ 
+x100 x200 x400 x800 x1500 x5k x10k xmarathon;
+/*
+x100=-x100; x200=-x200;x400=-x400;x800=-x800;x1500=-x1500;x5k=-x5k;
+x10k=-x10k;xmarathon=-xmarathon;
+*/
+run;
+
+proc print data = a;
+run;
+
+proc means data = a maxdec  = 3;
+run;
+
+proc corr data = a;
+run;
+quit;
+run;
+
+
+proc princomp    data = a  out=result1;
+var x100 x200 x400 x800 x1500 x5k  x10k xmarathon;
+run;
+quit;
+run;
+
+
+proc print data = result1; 
+*var country prin1 prin2 prin3;
+run;
+
+proc princomp   std out=result;
+var x100 x400 x1500  x10k ;
+run;
+
+
+
+/* use cov instead of corr */
+
+
+/* 
+proc princomp  cov  out=result;
+var x100 x400 x1500  x10k ;
+run;
+
+*/
+
+proc sgplot data=a;
+scatter  x=x100 y=x200/datalabel = country;
+*plot x100*x200;
+run;
+quit;
+
+proc sgplot data=result1; 
+scatter x=prin1 y=prin2/datalabel=country;
+run;
+quit;
+
+
+proc gplot data=result1; 
+plot prin2 *prin1 =country;
+run;
+quit;
+
+
+ods rtf close;
+ods html close;
+ods preferences;
+ods html;
+ods pdf startpage= never file = 'e:\sss\s520\socio.pdf';
+data a;
+infile 'e:\sss\s520\socio.dat';
+input pop school employ services house;
+run;
+
+proc corr data = a;
+run;
+
+proc factor data = a;
+quit;
+
+*proc factor data = a scree preplot method = ml  heywood rotate= promax ;*plot;
+run;
+
+/*proc factor data = a  method = ml  heywood rotate= promax ;
+run;
+*/
+
+proc factor data = a  method = prin   rotate= promax;* plot;
+run;
+
+proc factor data=a method = ml heywood n=1;
+title 'one factor';
+run; 
+/*proc factor data=a method = ml heywood n=2;
+title 'two factors';
+run; */
+proc factor data=a method = ml heywood n=3 rotate= promax;
+title 'three factors';
+run; 
+ods pdf close;
+
+
