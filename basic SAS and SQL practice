@@ -1,0 +1,920 @@
+data short3;
+
+  infile datalines dsd;
+  input name;
+  length name $4.;
+  format name $4.;
+  datalines;
+eeee
+ffff
+gggg
+hhhh
+;
+run;
+
+proc print data=short3;
+run;
+
+proc contents data=short3;
+run;
+
+data cellcounts;
+input R C B count;
+datalines;
+1 1 1 5
+1 1 2 7
+1 2 1 3
+1 2 2 2
+2 1 1 4
+2 1 2 6
+2 2 1 5
+2 2 2 8
+;
+run;
+proc freq data=cellcounts;
+weight count;
+table R*C;
+run;
+
+ods close;
+ods preference;
+ods html;
+ods html body='E:\4th-semester\multivariate-regression\code-and-pdf\data\a.html'
+contents='E:\4th-semester\multivariate-regression\code-and-pdf\data\b.html'
+page='E:\4th-semester\multivariate-regression\code-and-pdf\data\c.html'
+frame='E:\4th-semester\multivariate-regression\code-and-pdf\data\d.html';
+data gpa;
+infile 'E:\4th-semester\multivariate-regression\code-and-pdf\data\gpa(1).dat';
+input admit $ gpa gmat;
+run;
+
+
+data admitst;
+infile 'E:\4th-semester\multivariate-regression\code-and-pdf\data\gpatst.dat';
+input admit $ gpa gmat;
+run;
+
+proc standard data  = gpa mean = 0 std = 1 out = gpastd;
+var gpa gmat;
+run;
+
+proc sort data = gpa;
+by admit;
+
+proc means data = gpa;
+class admit;
+var gpa gmat;
+run;
+
+proc sgscatter data = gpa;
+matrix gpa gmat/group = admit diagonal=(histogram kernel);
+run;
+
+ods html close;
+
+/*pool=yes means linear(default), 'test' means do test first, 'no' means quadratic */
+/*distance means to use Mahalanobis distance, which is scale-invariant*/
+/*save the classification rule of the output in the outstat statement*/
+/*displays multivariate statistics for testing the hypothesis that the class means are equal in the population*/
+ods trace on;
+ods output ClassifiedResub=statdata;
+proc discrim data=gpa outstat=gpastat1 distance
+method=normal pool=test slpool=0.05 listerr manova;
+priors 'a'=.3333 'b'=.3333 'c'=.3334; 
+/* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+title 'Using Linear Discriminant Function';
+run;
+quit;
+proc print data=gpastat1;
+run;
+proc print data=statdata;
+run;
+ods html close;
+
+
+
+proc discrim data=gpastat1 testdata=admitst testout=tout1 testlist distance;
+class admit;
+var gpa gmat;
+run;
+proc print data=tout1;
+run;
+ods trace off;
+ods trac on;
+proc discrim data=gpa outcross=gpastat2 distance
+method=normal pool=test slpool=0.05 listerr manova;
+priors 'a'=.3333 'b'=.3333 'c'=.3334; 
+/* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+title 'Using Linear Discriminant Function';
+run;
+quit;
+ods trace off;
+proc print data=gpastat2;
+run;
+proc discrim data=gpastat2 testdata=admitst testout=tout2 testlist distance;
+class admit;
+var gpa gmat;
+run;
+proc print data=tout2;
+run;
+proc discrim data=gpa out=gpastat3 distance
+method=normal pool=test slpool=0.05 listerr manova;
+priors 'a'=.3333 'b'=.3333 'c'=.3334; 
+/* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+title 'Using Linear Discriminant Function';
+run;
+quit;
+proc print data=gpastat3;
+run;
+proc discrim data=gpastat3 testdata=admitst testout=tout3 testlist distance;
+class admit;
+var gpa gmat;
+run;
+proc print data=tout3;
+run;
+
+/*perform the rule in test data*/
+proc discrim data=gpastat testdata=admitst testout=tout testlist distance;
+class admit;
+var gpa gmat;
+run;
+
+/*perform the cross validation as the standard of classification rule*/
+/*wcov means to display within-class(a,b,and c) covariance for each class level, pcov means pooled within-class covariance, MONOVA means to generate a result that test the class means of admit are equal in the population of gpa and gmat*/
+proc discrim data=gpa
+method=normal pool=test manova wcov pcov listerr crosslisterr distance;
+priors prop;
+class admit;
+var gpa gmat;
+run;
+
+ /*A nonparametric method that use K-nearest-neighbor rule. An observation x is classified into a group based on the information from the k nearest neighbors of x*/
+proc discrim data=gpa
+method=npar k=5 listerr crosslisterr distance;
+class admit;
+priors prop;
+var gpa gmat;
+run;
+
+ds close;
+ods preference;
+ods html;
+data gpa;
+infile 'E:\4th-semester\multivariate-regression\code-and-pdf\data\gpa(1).dat';
+input admit $ gpa gmat;
+run;
+
+
+data admitst;
+infile 'E:\4th-semester\multivariate-regression\code-and-pdf\data\gpatst.dat';
+input admit $ gpa gmat;
+run;
+
+proc standard data  = gpa mean = 0 std = 1 out = gpastd;
+var gpa gmat;
+run;
+
+proc sort data = gpa;
+by admit;
+
+proc means data = gpa;
+class admit;
+var gpa gmat;
+run;
+
+proc sgscatter data = gpa;
+matrix gpa gmat/group = admit diagonal=(histogram kernel);
+run;
+
+/*pool=yes means linear(default), 'test' means do test first, 'no' means quadratic */
+/*distance means to use Mahalanobis distance, which is scale-invariant*/
+/*save the classification rule of the output in the outstat statement*/
+/*displays multivariate statistics for testing the hypothesis that the class means are equal in the population*/
+
+ods trace on;
+ods output ClassifiedResub=statdata;
+proc discrim data=gpa outstat=gpastat1 crosslist crossvalidate distance
+method=normal pool=test slpool=0.05 listerr crosslisterr manova;
+priors 'a'=.3333 'b'=.3333 'c'=.3334; 
+/* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+title 'Using Linear Discriminant Function';
+run;
+quit;
+proc print data=gpastat1;
+run;
+proc print data=statdata;
+run;
+proc discrim data=gpastat1 testdata=admitst testout=tout1 testlist distance;
+class admit;
+var gpa gmat;
+run;
+proc print data=tout1;
+run;
+ods trace off;
+ods trac on;
+proc discrim data=gpa outcross=gpastat2 distance
+method=normal pool=test slpool=0.05 listerr manova;
+priors 'a'=.3333 'b'=.3333 'c'=.3334; 
+/* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+title 'Using Linear Discriminant Function';
+run;
+quit;
+ods trace off;
+proc print data=gpastat2;
+run;
+proc discrim data=gpastat2 testdata=admitst testout=tout2 testlist distance;
+class admit;
+var gpa gmat;
+run;
+
+
+/* SQL: structured query language */
+
+
+
+DATA CUSTOMERS2;
+  INFILE CARDS MISSOVER;
+  INPUT @1 CUSTNUM 2.  @5 CUSTNAME $10.  @17 CUSTCITY $20.;
+  CARDS;
+ 1  Smith       San Diego
+ 7  Lafler      Spring Valley
+11  Jones       Carmel
+13  Thompson    Miami
+ 7  Loffler     Spring Valley
+ 1  Smithe      San Diego
+ 7  Laughler    Spring Valley
+ 7  Laffler     Spring Valley
+;
+RUN;
+proc contents data = CUSTOMERS2;
+run;
+
+DATA INVENTORY;
+  INFILE CARDS MISSOVER;
+  INPUT @1 PRODNUM 4.  @8 INVENQTY 2.  @13 ORDDATE
+MMDDYY10.  @27 INVENCST COMMA10.2  @39 MANUNUM 3.;
+  FORMAT INVENCST DOLLAR10.2 ORDDATE MMDDYY10.;
+  CARDS;
+1110   20   09/01/2000    45,000.00   111
+1700   10   08/15/2000    28,000.00   170
+5001    5   08/15/2000     1,000.00   500
+5002    3   08/15/2000       900.00   500
+5003   10   08/15/2000     2,000.00   500
+5004   20   09/01/2000     1,400.00   500
+5001    2   09/01/2000     1,200.00   600
+;
+RUN;
+DATA INVOICE;
+  INFILE CARDS MISSOVER;
+  INPUT @1 INVNUM 4.  @7 MANUNUM 3.  @13 CUSTNUM 4. 
+@20 INVQTY 2.  @25 INVPRICE COMMA10.2  @37 PRODNUM 4.;
+  FORMAT INVPRICE DOLLAR12.2;
+  CARDS;
+1001  500    201   5      1,495.00  5001
+1002  600   1301   2      1,598.00  6001
+1003  210    101   7        245.00  2101
+1004  111    501   3      9,600.00  1110
+1005  500    801   2        798.00  5002
+1006  500    901   4        396.00  6000
+1007  500    401   7     23,100.00  1200
+;
+RUN;
+DATA PRODUCTS;
+  INFILE CARDS MISSOVER;
+  INPUT @1 PRODNUM 4.  @7 PRODNAME $25.  @33 MANUNUM 3. 
+@38 PRODTYPE $15.  @53 PRODCOST COMMA10.2;
+  FORMAT PRODCOST DOLLAR9.2;
+  CARDS;
+1110  Dream Machine             111  Workstation    3,200.00
+1200  Business Machine          120  Workstation    3,300.00
+1700  Travel Laptop             170  Laptop         3,400.00
+2101  Analog Cell Phone         210  Phone             35.00
+2102  Digital Cell Phone        210  Phone            175.00
+2200  Office Phone              220  Phone            130.00
+5001  Spreadsheet Software      500  Software         299.00
+5002  Database Software         500  Software         399.00
+5003  Wordprocessor Software    500  Software         299.00
+5004  Graphics Software         500  Software         299.00
+;
+RUN;
+DATA PURCHASES;
+  INFILE CARDS MISSOVER;
+  INPUT @1 CUSTNUM 2.  @5 ITEM $10.  @18 UNITS 2.  @21 UNITCOST COMMA12.2;
+  FORMAT UNITCOST DOLLAR12.2;
+  CARDS;
+ 1  Chair         1   179.00
+ 1  Pens         12     0.89
+ 1  Paper         4     6.95
+ 1  Stapler       1     8.95
+ 7  Mouse Pad     1    11.79
+ 7  Pens         24     1.59
+13  Markers       .     0.99
+;
+RUN;
+DATA MANUFACTURERS;
+  INFILE CARDS MISSOVER;
+  INPUT @1  MANUNUM 3.  @6 MANUNAME $22.  @29 MANUCITY $12.  @41 MANUSTAT $2.;
+  CARDS;
+111  Cupid Computer         Houston     TX
+210  Global Comm Corp       San Diego   CA
+600  World Internet Corp    Miami       FL
+120  Storage Devices Inc    San Mateo   CA
+500  KPL Enterprises        San Diego   CA
+700  San Diego PC Planet    San Diego   CA
+;
+RUN;
+
+
+
+proc print data = invoice;
+run;
+
+proc sql;
+select *
+from inventory;
+
+quit;
+
+proc sql;
+select prodname, prodtype, prodcost
+from products;
+quit;
+
+proc sql;
+select prodname, prodtype, prodcost
+from products
+where prodtype = 'Software' and prodcost > 300;
+quit;
+
+
+proc sql;
+select prodname, prodtype, prodcost
+from products
+where prodtype = 'Software' or prodcost > 300;
+quit;
+
+proc sql;
+select *
+from manufacturers;
+quit;
+
+
+
+proc sql;
+select *, manucity|| "," || manustat as LOCATION
+from manufacturers;
+quit;
+
+
+
+
+proc sql;
+select *, trim(manucity)|| ", " || manustat as LOCATION
+from manufacturers;
+quit;
+
+proc sql;
+select * , length(prodname) as LENGTH
+from products;
+quit;
+
+
+proc sql;
+select prodnum, prodname, prodtype
+from products
+where index(prodname, 'Phone') > 0;
+quit;
+
+ods listing;
+
+proc sql;
+select *, trim(manucity)|| ", " || manustat as LOCATION
+from manufacturers;
+quit;
+
+proc sql;
+select prodnum, prodname, length(prodname) as Lenlgth
+from products;
+
+quit;
+
+data products1;
+set products ;
+run;
+
+proc sql;
+update products1
+set prodname = scan(prodname,1)||trim(prodtype);
+quit;
+
+proc sql;
+select *
+from products1;
+quit;
+
+
+proc sql;
+select *
+from products;
+quit;
+
+proc sql ;
+select prodtype
+from products
+where index(upcase(prodname), 'PHONE') >0; *lowcase;
+quit;
+
+/* for sounds-like operator: =* */
+proc sql;
+select * 
+from customers2
+where custname =* 'Lafler';
+quit;
+
+
+proc sql;
+select * 
+from customers2
+where custname =* 'lafler';
+quit;
+
+
+
+proc sql;
+select * 
+from customers2
+where custname =* 'lafler' or
+custname =* 'Laughler' or
+custname =* 'Lasler';
+quit;
+
+proc sql ;
+select *, count(*) as Row_count
+from purchases;
+quit;
+
+/* can use n(*) as well */
+proc sql ; 
+select  count(*) as Row_count
+from purchases;
+quit;
+
+
+data test;
+input a b;
+cards;
+. .
+. 1
+1 .
+;
+run;
+
+proc sql;
+select count(*) as row_count
+from test;
+quit;
+
+
+proc sql;
+select count(a) as row_count
+from test;
+quit;
+
+
+
+proc sql;
+select count(b) as row_count
+from test;
+quit;
+
+proc sql;
+select min(prodcost) as Cheapest
+format  = dollar9.2 label = 'Least Expensive'
+from products;
+quit;
+
+proc sql;
+select *, min(prodcost) as cheapest
+from products
+having prodcost = min(prodcost);
+quit;
+
+
+
+proc sql;
+select *, min(prodcost) as cheapest
+from products;
+*having prodcost = min(prodcost);
+quit;
+
+proc sql;
+select *
+from products
+where prodcost = min(prodcost);
+quit;
+
+proc sql;
+select *
+from purchases;
+quit;
+
+
+proc sql;
+select sum((units)*(unitcost)) as total_purchase format =dollar8.2
+from purchases
+where upcase(item)='PENS' or upcase(item) = 'MARKERS';
+quit;
+proc print data = purchases;
+run;
+
+
+proc sql;
+select avg(prodcost) as average_product_cost
+from products;
+quit;
+
+
+/* can use mean function as well */
+proc sql;
+select avg(prodcost) as average_product_cost
+from products
+where upcase(prodtype) in ("SOFTWARE");
+quit;
+
+proc sql;
+select var(prodcost) as variance
+from products;
+quit;
+
+/* sample variance = sum(xi-xbar)^2/(n-1) 
+css =corrected sum squares */
+
+proc sql;
+select var(prodcost) as variance, css(prodcost) as corrected_ss,
+count(prodcost) as n, CALCULATED corrected_ss/(CALCULATED n-1) as sample_variance
+from products;
+quit;
+
+/* avg, mean, count, freq, n, css, cv, max, min, nmiss, range, std, stderr, sum, t, uss, var */
+
+proc sql;
+select *
+from products
+where prodcost between 200 and 500 ;
+quit;
+
+proc sql;
+select *
+from inventory;
+quit;
+
+proc sql;
+select *
+from inventory
+where year(orddate) between 1999 and 2000;
+quit;
+
+
+proc sql;
+select *
+from inventory
+where month(orddate) =08;
+quit;
+
+
+proc sql;
+select *
+from products
+where prodname like 'A%';
+quit;
+
+
+proc sql;
+select *
+from products
+where prodtype like '%Soft%';
+quit;
+
+
+
+proc sql;
+select *
+from products
+where upcase(prodtype) like 'P____';  /* start with P and followed by 4 letters */
+quit;
+
+proc sql;
+select *
+from products
+where prodname like '___a%';  /* three letters before a */
+quit;
+
+
+proc sql;
+create table customers3
+(custnum num label = 'customer number',
+custname char(25),
+custcity char(20));
+quit;
+
+proc sql;
+create table customers4
+like customers;
+quit;
+
+proc sql ;
+create table hot_products (keep = prodname prodtype)
+like products;
+quit;
+
+proc sql;
+create table hot_products as
+select *
+from products;
+quit;
+
+
+
+proc sql;
+create table hot_products as
+select *
+from products
+where upcase(prodtype) in ("SOFTWARE", "PHONE");
+quit;
+
+proc sql;
+select *
+from hot_products;
+quit;
+
+proc sql;
+create table customers3 as
+select *
+from customers2;
+quit;
+
+proc sql;
+insert into customers3 (custnum, custname, custcity)
+values (702, "Mission Valley Computing", "San Diego")
+values (803, "Test", "Alpine");
+quit;
+
+proc sql;
+select *
+from customers3;
+quit;
+
+
+proc sql;
+select *
+from products
+order by prodnum;
+quit;
+
+data products2;
+set products;
+run;
+
+proc sql;
+select *
+from products2;
+quit;
+
+proc sql;
+update products2
+set prodcost = prodcost-(prodcost*0.2)
+where upcase(prodtype) = 'LAPTOP';
+
+select *
+from products2;
+quit;
+
+
+
+
+
+
+
+
+
+
+proc print data=tout2;
+run;
+proc discrim data=gpa out=gpastat3 distance
+method=normal pool=test slpool=0.05 listerr manova;
+priors 'a'=.3333 'b'=.3333 'c'=.3334; 
+/* a: admin b:notadmit c:border */
+class admit;
+var gpa gmat;
+title 'Using Linear Discriminant Function';
+run;
+quit;
+proc print data=gpastat3;
+run;
+proc discrim data=gpastat3 testdata=admitst testout=tout3 testlist distance;
+class admit;
+var gpa gmat;
+run;
+proc print data=tout3;
+run;
+
+/*perform the rule in test data*/
+proc discrim data=gpastat testdata=admitst testout=tout testlist distance;
+class admit;
+var gpa gmat;
+run;
+
+/*perform the cross validation as the standard of classification rule*/
+/*wcov means to display within-class(a,b,and c) covariance for each class level, pcov means pooled within-class covariance, MONOVA means to generate a result that test the class means of admit are equal in the population of gpa and gmat*/
+proc discrim data=gpa
+method=normal pool=test manova wcov pcov listerr crosslisterr distance;
+priors prop;
+class admit;
+var gpa gmat;
+run;
+
+ /*A nonparametric method that use K-nearest-neighbor rule. An observation x is classified into a group based on the information from the k nearest neighbors of x*/
+proc discrim data=gpa
+method=npar k=5 listerr crosslisterr distance;
+class admit;
+priors prop;
+var gpa gmat;
+run;
+
+proc tabulate data=gpa;
+class admit gmat;
+table admit all , gmat all * colpctn ;
+run;
+
+data age;
+input age gender$ date mmddyy10.;
+cards;
+18 F 01/01/2011
+30 M 01/05/1988
+25 F 01/03/2016
+67 F 12/03/2016
+15 M 07/03/2015
+19 F 04/01/2013
+17 M 05/05/2001
+27 F 11/03/2006
+69 F 08/09/1993
+21 M 09/25/1995
+29 F 01/30/1991
+33 M 06/05/2013
+22 F 04/13/2003
+74 F 10/03/1998
+87 M 07/13/1999
+
+;
+run;
+
+proc format;
+value agefmt
+low-17 = 'under 18'
+18-65 ='18-65'
+66-90 ='66-90'
+91-high= 'over 90';
+run;
+
+proc print data=age;
+format age agefmt. date mmddyy8.;
+run;
+data gpa1; set gpa;
+gpa_25=gpa-2.5;
+run;
+proc means data=gpa1 t prt;
+var gpa gpa_25;
+run;
+
+proc tabulate data=age;
+class gender age;
+format age agefmt.;
+table gender all *rowpctn, age all ;
+run;
+
+proc tabulate data=age;
+class gender age;
+format age agefmt.;
+table gender all , age *(N colpctn) ;
+run;
+
+proc tabulate data=age;
+class gender age;
+format age agefmt.;
+table gender all , (age all)*(N colpctn) ;
+run;
+
+proc tabulate data=age;
+class gender age;
+format age agefmt.;
+table gender all , age all*(N colpctn) ;
+run;
+
+proc tabulate data=age;
+class gender age;
+format age agefmt.;
+table gender all , age *(N colpctn) all ;
+run;
+
+proc tabulate data=age;
+class gender age;
+format age agefmt.;
+table gender all, age;
+run;
+
+proc tabulate data=age;
+class gender age;
+format age agefmt.;
+table gender all , age*colpctn  all*(N colpctn);
+run;
+
+proc tabulate data=age;
+class gender age date;
+format age agefmt.;
+table gender, age*date;
+run;
+
+proc tabulate data=age;
+class gender age date;
+format age agefmt.;
+table gender, age date;
+run;
+
+/*class means class varible,count variable. var means analysis variable, numrical variable, summition*/
+proc tabulate data=age;
+class gender date;
+var age;
+table gender, age*mean date;
+run;
+
+proc tabulate data=age;
+class gender date;
+var age;
+table gender*(age*mean),date;
+run;
+
+proc tabulate data=age;
+format age agefmt.;
+class gender date age/preloadfmt;
+table gender*age,date/printmiss;
+run;
+
+proc tabulate;
+format age agefmt. date monname.;
+class age date; 
+keylabel N='Total' colpctn='%';
+table age='', 
+ date='Date of acceptance'*(N colpctn)   
+ all='Total'*N='Number'/box='age of claimant';
+run;
+
+proc format;
+value agefmta(multilabel notsorted)
+low-13='underage'
+14-17='minors'
+18-high='  adult'
+18-65 ='  18-65'
+66-80 ='  66-80'
+81-high= '  over 80'
+;
+run;
+
+proc tabulate data=age format=comma6.;
+format age agefmta. date monname.;
+class age / mlf preloadfmt order=data; 
+class date/order=internal; 
+keylabel N=' ' ColPctN='%';
+table age=' ' all='Total', 
+ date='Date' 
+ all='months total'*(N='Total' ColPctN*format=6.1)
+ /box = 'Age' printmiss misstext = '-';
+run;
+
+proc tabulate data=age format=comma6.;
+format age agefmta. date monname.;
+class age / mlf preloadfmt order=data; 
+class date/order=internal; 
+classlev age/style={asis=yes};
+keylabel N=' ' ColPctN='%';
+table age=' ' all='Total', 
+ date='Date' 
+ all='months total'*(N='Total' ColPctN*format=6.1)
+ /box = 'Age' printmiss misstext = '-';
+run;
+
+
+
+
+
+
+
