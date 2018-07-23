@@ -1,0 +1,267 @@
+ods html close;
+ods preferences;
+ods html;
+ods trace on;
+ods select Summary;
+options nodate orientation=landscape;
+title1 "the xyz company";
+footnote "all figures are confidentical";
+/*ods pdf file= 'E:\4th-semester\multivariate-regression\project\ppp.pdf'style=sasweb;*/
+ods html style=minimal file= 'E:\4th-semester\multivariate-regression\project\excel1.xls';
+/*ods tagsets.ExcelXP file= 'E:\4th-semester\multivariate-regression\project\excelxp.xml';*/
+
+libname p 'E:\4th-semester\multivariate-regression\project';
+/*missover is used to prevent sas from going to the next line to complete a case,if it did not
+find enought values on a given line of raw data*/
+data p.potato2;
+infile 'E:\4th-semester\multivariate-regression\project\potato1.dat' missover;
+input Area HoldingTemp Size StoragePeriod CookingMethod Texture Flavor Moistness;
+run;
+
+data potato;
+infile 'E:\4th-semester\multivariate-regression\project\potato1.dat';
+input Area HoldingTemp Size StoragePeriod CookingMethod Texture Flavor Moistness;
+run;
+data newdemo; set potato;
+a= Flavor/Moistness;
+run;
+proc print data= newdemo(obs=5);
+var Flavor Moistness Texture /style(column)={background=#33EE44};
+run;
+proc means data=potato;
+run;
+/*ods pdf close;*/
+/*ods tagsets.ExcelXP close;*/
+ods trace off;
+ods html close;
+
+ods preferences;
+ods html;
+proc template;
+list styles;
+run;
+
+proc univariate data=potato;
+run;
+proc sort;
+by Area;
+run;
+
+proc boxplot data =potato;
+plot Texture*Area;
+run;
+quit;
+
+proc sgplot data =potato;
+xaxis type=discrete;
+series x= CookingMethod y= Texture/ datalabel;
+series x= CookingMethod y= Flavor/ datalabel y2axis;
+run;
+proc sgplot data =potato;
+scatter x=Flavor y=	Texture;
+ellipse x=Flavor y=	Texture;
+run;
+proc sgplot data=potato;
+hbox Flavor/catergory=CookingMethod;
+run;
+proc sgplot data=potato;
+histogram Texture;
+density Texture;
+density Texture/ type= kernel;
+run;
+proc gchart data=potato;
+vbar Flavor;
+run;
+quit;
+
+proc univariate plots data=potato;
+	class Area;
+    var Flavor; 
+	histogram Flavor/ vscale=count wbarline=3 waxis=3 height=4;;
+run;
+
+proc means data=potato;
+by Area;
+run;
+proc freq data =potato;
+weight CookingMethod;
+table Size*CookingMethod/list;
+run;
+proc sgplot data=potato;
+histogram Size;
+run;
+proc print noobs data=potato;
+run;
+ 
+proc corr data = potato;
+var Texture Flavor Moistness;
+run;
+
+/*test hypothesis that all the area effects = 0*/
+proc glm data = potato;
+class Area;
+model Texture Moistness Flavor = Area/nouni;
+means Area; 
+manova h=Area;
+run;
+quit;
+
+title 'test difference of area in flavor';
+proc glm data = potato;
+class Area;
+model Texture Moistness Flavor = Area/nouni;
+contrast 'test' Area -1 1;
+manova h=Area m=Flavor;
+run;
+quit;
+title; 
+
+proc glm data = potato;
+class HoldingTemp;
+model Texture Moistness Flavor = HoldingTemp/nouni;
+means HoldingTemp;
+manova h=HoldingTemp;
+run;
+quit;
+
+proc glm data = potato;
+class Size;
+model Texture Moistness Flavor = Size/nouni ;
+means Size;
+manova h=Size;
+run;
+quit;
+/* test the different effect of size for flavor, and then find they are same! */
+proc glm data = potato;
+class Size;
+model Texture Moistness Flavor = Size/nouni ;
+means Size;
+contrast 'test'Size -1 1;
+manova h=Size m=Flavor;
+run;
+quit;
+
+proc glm data = potato;
+class StoragePeriod;
+model Texture Moistness Flavor = StoragePeriod/nouni;
+means StoragePeriod;
+manova h=StoragePeriod;
+run;
+quit;
+/* test the different effect of storage period for texture, finally we find they are all the same! p value is 0.9042*/
+proc glm data = potato;
+class StoragePeriod;
+model Texture Moistness Flavor = StoragePeriod/nouni;
+means StoragePeriod;
+manova h=StoragePeriod m=Texture;
+run;
+quit;
+
+proc glm data = potato;
+class StoragePeriod;
+model Texture Moistness Flavor = StoragePeriod/nouni;
+means StoragePeriod;
+contrast 'test' StoragePeriod 0 0 -1 1;
+manova h=StoragePeriod m=Moistness;
+run;
+quit;
+
+proc glm data = potato;
+class StoragePeriod;
+model Texture Moistness Flavor = StoragePeriod/nouni;
+contrast 'test' StoragePeriod 0 0 -1 1;
+manova h=StoragePeriod m= Flavor;
+run;
+quit;
+proc glm data = potato;
+class CookingMethod;
+model Texture Moistness Flavor = CookingMethod/nouni;
+means CookingMethod;
+manova h=CookingMethod;
+run;
+quit;
+proc glm data = potato;
+class CookingMethod;
+model Texture Moistness Flavor = CookingMethod/nouni;
+contrast 'test' CookingMethod 0 0 0 1 -1;
+manova h=CookingMethod m= Flavor;
+run;
+quit;
+
+proc glm data = potato;
+class CookingMethod;
+model Texture Moistness Flavor = CookingMethod/nouni;
+contrast 'test' CookingMethod 1 -1 0 0 0;
+manova h=CookingMethod m= Texture;
+run;
+quit;
+
+data namegame;
+      length color name $8 game $12;
+      color='black';
+      name='jac';
+      game=trim(color)||name;
+      run;
+
+   proc print data=namegame;
+   var game;
+   run;
+proc contents data=namegame;
+run;
+
+proc print noobs data=potato(obs=10);
+run;
+/*show results as the original order*/
+proc contents varnum data=potato;
+run;
+proc contents data=potato;
+run;
+proc means Median Nmiss Mean probt t lclm data=potato ;
+run;
+/* practice to create a new varible column*/
+data subset;
+set potato;
+if CookingMethod<2 then test='M1';
+else if 2<=CookingMethod<4 then test ='M2';
+else test='M3';
+run;
+/*practice the format statement to change the appearance and group data*/
+proc format;
+value $test
+'M1','M2'='A'
+ 'M3'='B'
+other='C'
+;
+run;
+/*IMPORTANT! DON'T FORGET TO WRITE A PERIOD ON THE END OF THE FORMAT IF IT IS A CHARACTER*/
+/*practice to define a lable of a variable*/
+proc print data=subset(obs=10)label;
+format Moistness comma5.3
+test $test.;
+label Area='growing area';
+run;
+proc means Median Nmiss Mean data=subset ;
+run;
+ods graphics on;
+/*p means predicted value and clm means CI of mean*/
+proc glm data=potato outstat=a;
+model Flavor = Area Moistness/p clm;
+run;
+ods graphics off;
+/*try to use t test, see the result of Flavor_test, since the hypothesis is to check the mean 0*/
+data ttest; set potato;
+Flavor_test=Flavor-3;
+run;
+proc means data=ttest n mean stderr t prt;
+var Flavor Flavor_test;
+run;
+/*include missing values of class variables*/
+proc means data=potato missing;
+class Area;
+run;
+
+
+
+
+
+
